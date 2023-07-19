@@ -3,6 +3,7 @@
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "ws2812.pio.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -41,15 +42,13 @@ void pattern_snakes(uint len, uint t) {
 }
 
 void pattern_random(uint len, uint t) {
-  if (t % 8)
-    return;
+
   for (int i = 0; i < len; ++i)
     put_pixel(rand());
 }
 
 void pattern_sparkle(uint len, uint t) {
-  if (t % 8)
-    return;
+
   for (int i = 0; i < len; ++i)
     put_pixel(rand() % 16 ? 0 : 0xffffffff);
 }
@@ -65,10 +64,12 @@ void pattern_greys(uint len, uint t) {
 }
 
 typedef void (*pattern)(uint len, uint t);
-const struct {
+typedef struct {
   pattern pat;
   const char *name;
-} pattern_table[] = {
+} pattern_t;
+
+pattern_t pattern_table[] = {
     {pattern_snakes, "Snakes!"},
     {pattern_random, "Random data"},
     {pattern_sparkle, "Sparkles"},
@@ -87,11 +88,14 @@ int main() {
   uint offset = pio_add_program(pio, &ws2812_program);
 
   ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
-
   int t = 0;
   while (1) {
-    pattern_table[3].pat(NUM_PIXELS, "(forward)");
-    sleep_ms(500);
-    puts("Hello world ! \r\n");
+
+    uint32_t time_start = time_us_32();
+    pattern_table[1].pat(NUM_PIXELS, 1);
+    uint32_t time_stop = time_us_32();
+
+    sleep_ms(1000);
+    printf("Hello world ! %d \r\n", time_stop - time_start);
   }
 }
